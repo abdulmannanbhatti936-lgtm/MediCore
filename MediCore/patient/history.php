@@ -1,0 +1,7 @@
+<?php session_start(); require_once __DIR__ . '/../config/db.php'; requireLogin(['patient']);
+$p=$pdo->prepare('SELECT id FROM patients WHERE user_id=? LIMIT 1'); $p->execute([$_SESSION['user_id']]); $patientId=(int)$p->fetchColumn();
+$s=$pdo->prepare("SELECT a.*,u.name doctor_name,d.specialization,pr.medicines,pr.instructions FROM appointments a JOIN doctors d ON d.id=a.doctor_id JOIN users u ON u.id=d.user_id LEFT JOIN prescriptions pr ON pr.appointment_id=a.id WHERE a.patient_id=? ORDER BY a.appointment_date DESC,a.appointment_time DESC"); $s->execute([$patientId]); $rows=$s->fetchAll();
+$pageTitle='History'; include __DIR__ . '/../includes/header.php'; ?>
+<h2 class="fw-bold mb-3">Appointment History</h2>
+<div class="table-wrap"><div class="table-responsive"><table class="table table-striped table-hover mb-0"><thead><tr><th>Doctor</th><th>Date</th><th>Status</th><th>Prescription</th></tr></thead><tbody><?php foreach($rows as $r): ?><tr><td><?= e($r['doctor_name']) ?> <small class="text-muted">(<?= e($r['specialization']) ?>)</small></td><td><?= e($r['appointment_date']) ?> <?= e(substr($r['appointment_time'],0,5)) ?></td><td><?= e(ucfirst($r['status'])) ?></td><td><?php if($r['medicines']): ?><strong>Medicines:</strong> <?= e($r['medicines']) ?><br><strong>Instructions:</strong> <?= e($r['instructions']) ?><?php else: ?><span class="text-muted">No prescription yet</span><?php endif; ?></td></tr><?php endforeach; ?></tbody></table></div></div>
+<?php include __DIR__ . '/../includes/footer.php'; ?>

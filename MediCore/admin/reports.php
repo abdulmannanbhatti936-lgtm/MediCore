@@ -1,0 +1,10 @@
+<?php session_start(); require_once __DIR__ . '/../config/db.php'; requireLogin(['admin']);
+$rev=(float)$pdo->query("SELECT COALESCE(SUM(d.fee),0) FROM appointments a JOIN doctors d ON d.id=a.doctor_id WHERE a.status='completed'")->fetchColumn();
+$byDoc=$pdo->query("SELECT u.name doctor_name,d.specialization,COUNT(a.id) total,COALESCE(SUM(CASE WHEN a.status='completed' THEN d.fee ELSE 0 END),0) revenue FROM doctors d JOIN users u ON u.id=d.user_id LEFT JOIN appointments a ON a.doctor_id=d.id GROUP BY d.id ORDER BY revenue DESC")->fetchAll();
+$monthly=$pdo->query("SELECT DATE_FORMAT(appointment_date,'%Y-%m') month_key,COUNT(*) total FROM appointments GROUP BY DATE_FORMAT(appointment_date,'%Y-%m') ORDER BY month_key")->fetchAll();
+$pageTitle='Reports'; include __DIR__ . '/../includes/header.php'; ?>
+<div class="d-flex justify-content-between align-items-center mb-3"><h2 class="fw-bold mb-0">Reports</h2><button data-print-report class="btn btn-outline-dark"><i class="bi bi-printer"></i> Print</button></div>
+<div class="card p-3 mb-3"><small class="text-muted">Total Revenue</small><h2 class="fw-bold text-primary mb-0">PKR <?= e(number_format($rev,0)) ?></h2></div>
+<div class="row g-3"><div class="col-lg-7"><div class="table-wrap"><div class="table-responsive"><table class="table table-striped table-hover mb-0"><thead><tr><th>Doctor</th><th>Specialization</th><th>Appointments</th><th>Revenue</th></tr></thead><tbody><?php foreach($byDoc as $d): ?><tr><td><?= e($d['doctor_name']) ?></td><td><?= e($d['specialization']) ?></td><td><?= e((string)$d['total']) ?></td><td>PKR <?= e(number_format((float)$d['revenue'],0)) ?></td></tr><?php endforeach; ?></tbody></table></div></div></div><div class="col-lg-5"><div class="card p-3"><h6>Monthly Stats</h6><canvas id="reportChart"></canvas></div></div></div>
+<script>const m=<?= json_encode($monthly) ?>; new Chart(document.getElementById('reportChart'),{type:'bar',data:{labels:m.map(x=>x.month_key),datasets:[{label:'Appointments',data:m.map(x=>x.total),backgroundColor:'#3b82f6'}]}})</script>
+<?php include __DIR__ . '/../includes/footer.php'; ?>
